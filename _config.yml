@@ -37,6 +37,8 @@ sass:
 exclude:
 - README.md
 
+include:
+- images
 
 plugins:
   - jekyll-seo-tag
