@@ -39,6 +39,8 @@ exclude:
 
 include:
 - images
+- "images"
+- "assets"
 
 plugins:
   - jekyll-seo-tag
