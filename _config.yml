@@ -1,8 +1,7 @@
 ### your site title here
 
-title: Hagura - Light!
-baseurl: /hagura # name of the repository
-email: your@email.com
+title: LilBits
+baseurl: / # name of the repository
 
 
 
@@ -14,11 +13,10 @@ paginate: 4
 
 
 # Tracker
-analytics: UA-83979019-4
+# analytics:
 
 # Comments
-disqus-shortname: webjeda-demo
-
+# disqus-shortname: 
 
 #optimization
 #compress.html
