@@ -43,5 +43,4 @@ include:
 - "assets"
 
 plugins:
-  - jekyll-seo-tag
   - jekyll-paginate
