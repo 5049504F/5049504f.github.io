@@ -198,7 +198,7 @@ Transactions have the possibility to add a message, and this functionality have 
 
 
 
-First, we send `test><h1>test</h1>` and once we make the traansaction and open the message, we can observe that the HTML is being rendered:
+First, we send `test><h1>test</h1>` and once we make the transaction and open the message, we can observe that the HTML is being rendered:
 
 ![](/blog/images/htmlinjection.png)
 
