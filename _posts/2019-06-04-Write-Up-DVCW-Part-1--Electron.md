@@ -32,7 +32,7 @@ Now we can simply open the client with the following command `proxychains /blog/
 
 ## Decompilation
 
-It could be easily done with `npm install asar && asar extract app.asar destfolder` , but it could also  be decompiled in a Windows environment with this [plugin](http://www.tc4shell.com/en/7zip/asar/) for 7zip.
+It could be easily done with `npm install asar && asar extract app.asar destfolder` , but it could also  be decompiled in a Windows environment with this {:refdef: style="color: white;"}[plugin](http://www.tc4shell.com/en/7zip/asar){: refdef} for 7zip.
 
 
 
